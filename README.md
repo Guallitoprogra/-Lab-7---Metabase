@@ -30,12 +30,6 @@ El dashboard esta enfocado en disenar y evaluar campanas comerciales, entender e
 - Puerto `3000` libre para Metabase.
 - Puerto `5432` libre para PostgreSQL.
 
-Verificar Docker:
-
-```bash
-docker --version
-docker compose version
-```
 
 ## Como Correr el Laboratorio
 
@@ -71,15 +65,6 @@ Correo: calificar@uvg.edu.gt
 Contrasena: secret123+
 ```
 
-## Que Hace el Ambiente
-
-El ambiente crea una base de datos `retailmax` en PostgreSQL, carga las tablas y datos proporcionados por el laboratorio, conecta Metabase a PostgreSQL y deja configurado el dashboard:
-
-```text
-RetailMax - Dashboard de Marketing
-```
-
-El dashboard incluye 2 tabs y 12 indicadores, todos construidos con Native Query / SQL.
 
 ## Tabs del Dashboard
 
@@ -167,66 +152,11 @@ Remove-Item -Recurse -Force .\metabase-data\*
 docker compose up
 ```
 
-## Verificacion Rapida
-
-Ver contenedores:
-
-```bash
-docker compose ps
-```
-
-Entrar a PostgreSQL:
-
-```bash
-docker compose exec postgres psql -U retailmax -d retailmax
-```
-
-Contar datos principales:
-
-```sql
-SELECT 'cliente' AS tabla, COUNT(*) FROM cliente
-UNION ALL SELECT 'pedido', COUNT(*) FROM pedido
-UNION ALL SELECT 'detalle_pedido', COUNT(*) FROM detalle_pedido
-UNION ALL SELECT 'campana', COUNT(*) FROM campana
-UNION ALL SELECT 'campana_cliente', COUNT(*) FROM campana_cliente;
-```
-
-## Documentacion
-
-La documentacion completa de los 12 indicadores esta en:
-
-- `informe.md`
-- `informe.pdf`
-
-Cada indicador incluye:
-
-- Nombre del indicador.
-- Que representa en terminos de negocio.
-- Por que es importante.
-- Tipo de visualizacion usada.
-- Consulta SQL completa.
 
 ## Video de Presentacion
 
-Pegar aqui el enlace del video:
+Enlace video:
 
-```text
-LINK_DEL_VIDEO:
-```
 
-Guion sugerido para 5 integrantes:
 
-- Ver archivo `SCRIPT_VIDEO_5_PERSONAS.md`.
-
-## Entrega en Canvas
-
-Entregar el enlace publico del repositorio de GitHub. El repositorio debe contener:
-
-- `docker-compose.yml`
-- `metabase-data/`
-- `informe.pdf`
-- `README.md`
-- `sql/`
-- `scripts/`
-- Enlace del video en este README.
 
