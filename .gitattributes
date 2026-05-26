@@ -1,0 +1,5 @@
+*.pdf binary
+*.db binary
+*.mv.db binary
+*.trace.db binary
+

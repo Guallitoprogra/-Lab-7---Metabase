@@ -1,0 +1,9 @@
+# Docker / local runtime noise
+postgres-data/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
