@@ -155,7 +155,9 @@ docker compose up
 
 ## Video de Presentacion
 
-Enlace video:
+Enlace video: https://youtu.be/6EIbiD7mIj8
+
+Este trabajo se realizo como grupo 4 pero por motivos de falta de espacio en los grupos los integrantes se unieron al grupo de alguien mas y se trabajo separados 
 
 
 
