@@ -124,6 +124,10 @@ INDICATORS = [
         "tab": "Campañas y Conversión",
         "name": "Tasa de respuesta por campaña",
         "display": "bar",
+        "settings": {
+            "graph.dimensions": ["campana"],
+            "graph.metrics": ["tasa_respuesta_pct"],
+        },
         "query": """
 SELECT
     c.nombre AS campana,
@@ -142,6 +146,10 @@ ORDER BY tasa_respuesta_pct DESC;
         "tab": "Campañas y Conversión",
         "name": "ROI estimado por campaña",
         "display": "bar",
+        "settings": {
+            "graph.dimensions": ["campana"],
+            "graph.metrics": ["roi_estimado"],
+        },
         "query": """
 SELECT
     c.nombre AS campana,
@@ -163,6 +171,10 @@ ORDER BY roi_estimado DESC;
         "tab": "Campañas y Conversión",
         "name": "Conversión por tipo de campaña",
         "display": "bar",
+        "settings": {
+            "graph.dimensions": ["tipo"],
+            "graph.metrics": ["tasa_conversion_pct"],
+        },
         "query": """
 SELECT
     c.tipo,
@@ -179,6 +191,10 @@ ORDER BY tasa_conversion_pct DESC;
         "tab": "Campañas y Conversión",
         "name": "Respuesta por segmento de cliente",
         "display": "bar",
+        "settings": {
+            "graph.dimensions": ["segmento"],
+            "graph.metrics": ["tasa_respuesta_pct"],
+        },
         "query": """
 SELECT
     cl.segmento,
@@ -195,6 +211,10 @@ ORDER BY tasa_respuesta_pct DESC;
         "tab": "Campañas y Conversión",
         "name": "Evolución mensual de contactos y respuestas",
         "display": "line",
+        "settings": {
+            "graph.dimensions": ["mes"],
+            "graph.metrics": ["contactos", "respuestas"],
+        },
         "query": """
 SELECT
     DATE_TRUNC('month', c.fecha_inicio)::date AS mes,
@@ -210,6 +230,10 @@ ORDER BY mes;
         "tab": "Campañas y Conversión",
         "name": "Costo por respuesta por campaña",
         "display": "bar",
+        "settings": {
+            "graph.dimensions": ["campana"],
+            "graph.metrics": ["costo_por_respuesta"],
+        },
         "query": """
 SELECT
     c.nombre AS campana,
@@ -226,6 +250,10 @@ ORDER BY costo_por_respuesta ASC NULLS LAST;
         "tab": "Clientes, Segmentos y Canales",
         "name": "Valor y frecuencia por segmento",
         "display": "bar",
+        "settings": {
+            "graph.dimensions": ["segmento"],
+            "graph.metrics": ["ingresos"],
+        },
         "query": """
 SELECT
     cl.segmento,
@@ -245,6 +273,10 @@ ORDER BY ingresos DESC;
         "tab": "Clientes, Segmentos y Canales",
         "name": "Ingresos por canal y segmento",
         "display": "bar",
+        "settings": {
+            "graph.dimensions": ["canal", "segmento"],
+            "graph.metrics": ["ingresos"],
+        },
         "query": """
 SELECT
     p.canal,
@@ -262,6 +294,10 @@ ORDER BY p.canal, ingresos DESC;
         "tab": "Clientes, Segmentos y Canales",
         "name": "Frecuencia de compra mensual por segmento",
         "display": "line",
+        "settings": {
+            "graph.dimensions": ["mes", "segmento"],
+            "graph.metrics": ["pedidos_por_cliente"],
+        },
         "query": """
 SELECT
     DATE_TRUNC('month', p.fecha)::date AS mes,
@@ -280,6 +316,10 @@ ORDER BY mes, cl.segmento;
         "tab": "Clientes, Segmentos y Canales",
         "name": "Productos más atractivos para clientes que respondieron",
         "display": "bar",
+        "settings": {
+            "graph.dimensions": ["producto"],
+            "graph.metrics": ["ingresos"],
+        },
         "query": """
 SELECT
     pr.nombre AS producto,
@@ -305,6 +345,10 @@ LIMIT 15;
         "tab": "Clientes, Segmentos y Canales",
         "name": "Tiendas con mejor respuesta comercial",
         "display": "bar",
+        "settings": {
+            "graph.dimensions": ["tienda"],
+            "graph.metrics": ["ingresos"],
+        },
         "query": """
 SELECT
     t.region,
@@ -328,6 +372,7 @@ ORDER BY ingresos DESC;
         "tab": "Clientes, Segmentos y Canales",
         "name": "Clientes prioritarios para reactivación",
         "display": "table",
+        "settings": {},
         "query": """
 WITH historial AS (
     SELECT
@@ -363,6 +408,10 @@ LIMIT 20;
 def ensure_card(indicator, database_id, token):
     for card in list_items("/api/card", token):
         if card.get("name") == indicator["name"]:
+            current = request("GET", f"/api/card/{card['id']}", token=token)
+            if current.get("visualization_settings") != indicator.get("settings", {}):
+                current["visualization_settings"] = indicator.get("settings", {})
+                request("PUT", f"/api/card/{card['id']}", current, token)
             return card["id"]
     payload = {
         "name": indicator["name"],
@@ -372,7 +421,7 @@ def ensure_card(indicator, database_id, token):
             "type": "native",
             "native": {"query": indicator["query"].strip()},
         },
-        "visualization_settings": {},
+        "visualization_settings": indicator.get("settings", {}),
         "description": f"Indicador de Marketing - {indicator['tab']}",
     }
     return request("POST", "/api/card", payload, token)["id"]
@@ -415,8 +464,6 @@ def dashboard_has_card(dashboard_id, card_id, token):
 
 def add_cards(dashboard_id, card_ids, tab_ids, token):
     dashboard = request("GET", f"/api/dashboard/{dashboard_id}", token=token)
-    if len(dashboard.get("dashcards", []) or []) >= len(INDICATORS):
-        return
 
     positions = {
         "Campañas y Conversión": [(0, 0), (12, 0), (0, 6), (12, 6), (0, 12), (12, 12)],
@@ -432,20 +479,25 @@ def add_cards(dashboard_id, card_ids, tab_ids, token):
         {"id": tab_ids.get("Clientes, Segmentos y Canales", temp_tabs["Clientes, Segmentos y Canales"]), "name": "Clientes, Segmentos y Canales"},
     ]
     cards_payload = []
+    existing_dashcards = {
+        dashcard.get("card_id") or (dashcard.get("card") or {}).get("id"): dashcard
+        for dashcard in (dashboard.get("dashcards", []) or [])
+    }
     for indicator in INDICATORS:
         card_id = card_ids[indicator["name"]]
         tab = indicator["tab"]
         col, row = positions[tab][counters[tab]]
         counters[tab] += 1
+        existing = existing_dashcards.get(card_id, {})
         cards_payload.append({
-            "id": -(len(cards_payload) + 1),
+            "id": existing.get("id", -(len(cards_payload) + 1)),
             "card_id": card_id,
             "row": row,
             "col": col,
             "size_x": 12,
             "size_y": 6,
             "parameter_mappings": [],
-            "visualization_settings": {},
+            "visualization_settings": indicator.get("settings", {}),
             "series": [],
             "dashboard_tab_id": tab_ids.get(tab, temp_tabs[tab]),
         })
